@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Règles — Craponne : LA LÉGENDE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0f0f1e;
+    color: #e5e7eb;
+    padding-bottom: 5rem;
+  }
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 1.25rem;
+    background: #0f0f1e;
+    border-bottom: 1px solid #1f2937;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .top-bar h1 { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #F97316; }
+  .top-bar a  { font-size: 0.75rem; color: #6b7280; text-decoration: none; }
+  /* Nav épreuves */
+  .ep-nav {
+    display: flex; gap: 6px; overflow-x: auto; padding: 10px 1.25rem;
+    scrollbar-width: none; border-bottom: 1px solid #1f2937;
+    position: sticky; top: 45px; background: #0f0f1e; z-index: 9;
+  }
+  .ep-nav::-webkit-scrollbar { display: none; }
+  .ep-nav-btn {
+    flex-shrink: 0; padding: 5px 12px; border-radius: 20px;
+    border: 1px solid #374151; background: transparent;
+    color: #6b7280; font-size: 0.75rem; cursor: pointer; white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .ep-nav-btn.active { border-color: #F97316; background: #1c0e00; color: #FCD34D; }
+  /* Contenu */
+  .content { padding: 1rem 1.25rem; }
+  .ep-section { display: none; }
+  .ep-section.active { display: block; }
+  .ep-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 1rem; padding-bottom: 1rem;
+    border-bottom: 1px solid #1f2937;
+  }
+  .ep-emoji { font-size: 2rem; }
+  .ep-title { font-size: 1.1rem; font-weight: 700; color: #fff; }
+  .ep-type {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 500;
+    margin-top: 3px;
+  }
+  .type-chrono { background: #1a1000; border: 1px solid #92400e; color: #FCD34D; }
+  .type-passages { background: #052e16; border: 1px solid #166534; color: #86efac; }
+  /* Règles */
+  .rules-list { list-style: none; margin-bottom: 1.25rem; }
+  .rules-list li {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid #1f2937;
+    font-size: 0.85rem; line-height: 1.55; color: #d1d5db;
+  }
+  .rules-list li:last-child { border-bottom: none; }
+  .rule-num {
+    flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+    background: #1f2937; border: 1px solid #374151;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; color: #9ca3af; margin-top: 1px;
+  }
+  /* Blocs infos */
+  .info-block {
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+    font-size: 0.82rem; line-height: 1.55;
+  }
+  .info-block.warn { background: #1c1200; border: 1px solid #92400e; color: #FCD34D; }
+  .info-block.ok   { background: #052e16; border: 1px solid #166534; color: #86efac; }
+  .info-block.info { background: #0c1a3a; border: 1px solid #1d4ed8; color: #93c5fd; }
+  .info-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8; }
+  /* Barème résumé */
+  .bareme-box {
+    background: #111827; border: 1px solid #1f2937; border-radius: 10px;
+    overflow: hidden; margin-bottom: 1rem;
+  }
+  .bareme-title {
+    padding: 8px 12px; font-size: 0.7rem; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280;
+    border-bottom: 1px solid #1f2937;
+  }
+  .bareme-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .bareme-col { padding: 10px 12px; }
+  .bareme-col:first-child { border-right: 1px solid #1f2937; }
+  .bareme-col-title { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .bc-bleu  { color: #60A5FA; }
+  .bc-jaune { color: #FCD34D; }
+  .bareme-row { display: flex; justify-content: space-between; font-size: 0.78rem; padding: 3px 0; border-bottom: 1px solid #1f2937; }
+  .bareme-row:last-child { border-bottom: none; }
+  .bareme-pts { color: #818CF8; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <h1>🏅 Règles des épreuves</h1>
+  <a href="juge.html">← Saisie</a>
+</div>
+
+<!-- Navigation épreuves -->
+<div class="ep-nav">
+  <button class="ep-nav-btn active" onclick="showEp('wallball', this)">🏀 Wall Ball</button>
+  <button class="ep-nav-btn" onclick="showEp('course', this)">🏃 Course</button>
+  <button class="ep-nav-btn" onclick="showEp('corde', this)">🪢 Corde</button>
+  <button class="ep-nav-btn" onclick="showEp('rameur', this)">🚣 Rameur</button>
+  <button class="ep-nav-btn" onclick="showEp('skierg', this)">⛷️ Skierg</button>
+  <button class="ep-nav-btn" onclick="showEp('fentes', this)">🦵 Fentes</button>
+  <button class="ep-nav-btn" onclick="showEp('kettlebell', this)">🔔 Kettlebell</button>
+  <button class="ep-nav-btn" onclick="showEp('pneu', this)">⚫ Pneu</button>
+</div>
+
+<div class="content">
+
+  <!-- WALL BALL -->
+  <div class="ep-section active" id="ep-wallball">
+    <div class="ep-header">
+      <div class="ep-emoji">🏀</div>
+      <div>
+        <div class="ep-title">Wall Ball</div>
+        <span class="ep-type type-chrono">⏱ Chronométré — 60 reps</span>
+      </div>
+    </div>
+    <div class="info-block ok">
+      <div class="info-label">🎯 Objectif</div>
+      Réaliser <strong>60 répétitions valides</strong> le plus vite possible. L'épreuve s'arrête à <strong>7 minutes</strong> si l'objectif n'est pas atteint.
+    </div>
+    <ul class="rules-list">
+      <li><span class="rule-num">1</span><strong>Hauteur :</strong> la ball doit atteindre le niveau de la cible ou la dépasser — elle n'est pas obligée de la toucher. Toute répétition en dessous de la cible n'est pas comptabilisée.</li>
+      <li><span class="rule-num">2</span><strong>Squat :</strong> la flexion doit être suffisante — les fesses doivent descendre sous la ligne des genoux. Toute répétition sans flexion suffisante est refusée.</li>
+      <li><span class="rule-num">3</span><strong>Pauses :</strong> le participant peut faire des pauses à tout moment. Le chrono continue de tourner.</li>
+      <li><span class="rule-num">4</span><strong>Fin d'épreuve :</strong> le chrono s'arrête à la 60ème répétition valide, ou à 7 min si l'objectif n'est pas atteint.</li>
+      <li><span class="rule-num">5</span><strong>Pénalité comportement :</strong> tout manque de respect envers le jury entraîne <strong>+15 secondes</strong> sur le chrono final, par infraction constatée.</li>
+    </ul>
+    <div class="info-block warn">
+      <div class="info-label">⚠️ Points de vigilance juge</div>
+      Comptez à voix haute les répétitions valides uniquement. Signalez clairement les reps refusées. Notez chaque infraction de comportement pour appliquer la pénalité.
+    </div>
+    <div class="bareme-box">
+      <div class="bareme-title">Barème — seuils clés</div>
+      <div class="bareme-grid">
+        <div class="bareme-col">
+          <div class="bareme-col-title bc-bleu">🔵 Hommes</div>
+          <div class="bareme-row"><span>1000 pts</span><span class="bareme-pts">&lt; 3'50</span></div>
+          <div class="bareme-row"><span>750 pts</span><span class="bareme-pts">4'00</span></div>
+          <div class="bareme-row"><span>500 pts</span><span class="bareme-pts">4'30</span></div>
+          <div class="bareme-row"><span>250 pts</span><span class="bareme-pts">5'20</span></div>
+        </div>
+        <div class="bareme-col">
+          <div class="bareme-col-title bc-jaune">🟡 Femmes</div>
+          <div class="bareme-row"><span>1000 pts</span><span class="bareme-pts">&lt; 1'43</span></div>
+          <div class="bareme-row"><span>750 pts</span><span class="bareme-pts">2'33</span></div>
+          <div class="bareme-row"><span>500 pts</span><span class="bareme-pts">3'23</span></div>
+          <div class="bareme-row"><span>250 pts</span><span class="bareme-pts">4'13</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COURSE -->
+  <div class="ep-section" id="ep-course">
+    <div class="ep-header">
+      <div class="ep-emoji">🏃</div>
+      <div>
+        <div class="ep-title">Course</div>
+        <span class="ep-type type-chrono">⏱ Chronométré — 1000m</span>
+      </div>
+    </div>
+    <div class="info-block ok">
+      <div class="info-label">🎯 Objectif</div>
+      Parcourir <strong>1000m (2 allers-retours)</strong> le plus vite possible. L'épreuve s'arrête à <strong>7 minutes</strong> si l'objectif n'est pas atteint.
+    </div>
+    <ul class="rules-list">
+      <li><span class="rule-num">1</span><strong>Distance :</strong> l'épreuve est validée lorsque le participant a effectué 1000m, soit 2 allers-retours complets.</li>
+      <li><span class="rule-num">2</span><strong>Demi-tour :</strong> le demi-tour ne peut se faire que lorsque le participant a fait le tour du rocher/plot. Tout raccourci invalide le passage.</li>
+      <li><span class="rule-num">3</span><strong>Limite de temps :</strong> le chrono s'arrête à 7 minutes si les 1000m ne sont pas atteints.</li>
+      <li><span class="rule-num">4</span><strong>Pénalité comportement :</strong> tout manque de respect envers le jury entraîne <strong>+15 secondes</strong> sur le chrono final, par infraction constatée.</li>
+    </ul>
+    <div class="info-block warn">
+      <div class="info-label">⚠️ Points de vigilance juge</div>
+      Vérifiez que le participant fait bien le tour complet du plot avant le demi-tour. Notez chaque infraction de comportement pour appliquer la pénalité.
+    </div>
+    <div class="bareme-box">
+      <div class="bareme-title">Barème — seuils clés</div>
+      <div class="bareme-grid">
+        <div class="bareme-col">
+          <div class="bareme-col-title bc-bleu">🔵 Hommes</div>
+          <div class="bareme-row"><span>1000 pts</span><span class="bareme-pts">&lt; 1'43</span></div>
+          <div class="bareme-row"><span>750 pts</span><span class="bareme-pts">2'33</span></div>
+          <div class="bareme-row"><span>500 pts</span><span class="bareme-pts">3'23</span></div>
+          <div class="bareme-row"><span>250 pts</span><span class="bareme-pts">4'13</span></div>
+        </div>
+        <div class="bareme-col">
+          <div class="bareme-col-title bc-jaune">🟡 Femmes</div>
+          <div class="bareme-row"><span>1000 pts</span><span class="bareme-pts">&lt; 8'45</span></div>
+          <div class="bareme-row"><span>750 pts</span><span class="bareme-pts">4'15</span></div>
+          <div class="bareme-row"><span>500 pts</span><span class="bareme-pts">4'47</span></div>
+          <div class="bareme-row"><span>250 pts</span><span class="bareme-pts">5'37</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MONTÉE DE CORDE -->
+  <div class="ep-section" id="ep-corde">
+    <div class="ep-header">
+      <div class="ep-emoji">🪢</div>
+      <div>
+        <div class="ep-title">Montée de corde</div>
+        <span class="ep-type type-passages">🔢 Allers-retours — 2 min</span>
+      </div>
+    </div>
+    <div class="info-block ok">
+      <div class="info-label">🎯 Objectif</div>
+      Réaliser le maximum d'allers-retours en <strong>2 minutes</strong>. Un marquage sur la corde permet d'attribuer <strong>50 pts</strong> si la personne l'atteint à hauteur de hanche.
+    </div>
+    <ul class="rules-list">
+      <li><span class="rule-num">1</span><strong>Départ :</strong> le départ se fait debout, au pied de la corde.</li>
+      <li><span class="rule-num">2</span><strong>Saut interdit :</strong> il est interdit de sauter pour s'élancer. La montée doit partir de la position debout.</li>
+      <li><span class="rule-num">3</span><strong>Descente :</strong> la descente doit se faire en retenue — toute descente non contrôlée (lâcher ou glissade rapide) invalide le passage.</li>
+      <li><span class="rule-num">4</span><strong>Marquage mi-hauteur :</strong> atteindre le marquage à hauteur de hanche compte pour 0,5 passage et attribue 50 pts si l'athlète ne peut pas aller plus haut.</li>
+      <li><span class="rule-num">5</span><strong>Limite de temps :</strong> l'épreuve s'arrête à 2 minutes. Seuls les passages complétés avant la fin sont comptabilisés.</li>
+      <li><span class="rule-num">6</span><strong>Pénalité comportement :</strong> tout manque de respect envers le jury entraîne <strong>+15 secondes</strong> sur le chrono final, par infraction constatée.</li>
+    </ul>
+    <div class="info-block warn">
+      <div class="info-label">⚠️ Points de vigilance juge</div>
+      Vérifiez que la descente est bien contrôlée à chaque passage. Comptez à voix haute. Le saut au départ invalide le passage.
+    </div>
+    <div class="bareme-box">
+      <div class="bareme-title">Barème — nombre de passages (identique H/F)</div>
+      <div class="bareme-grid">
+        <div class="bareme-col">
+          <div class="bareme-col-title" style="color:#818CF8">Passages → Points</div>
+          <div class="bareme-row"><span>10 passages</span><span class="bareme-pts">1000 pts</span></div>
+          <div class="bareme-row"><span>7,5 passages</span><span class="bareme-pts">750 pts</span></div>
+          <div class="bareme-row"><span>5 passages</span><span class="bareme-pts">500 pts</span></div>
+          <div class="bareme-row"><span>2,5 passages</span><span class="bareme-pts">250 pts</span></div>
+        </div>
+        <div class="bareme-col">
+          <div class="bareme-col-title" style="color:#818CF8">Passages → Points</div>
+          <div class="bareme-row"><span>9 passages</span><span class="bareme-pts">900 pts</span></div>
+          <div class="bareme-row"><span>6 passages</span><span class="bareme-pts">600 pts</span></div>
+          <div class="bareme-row"><span>3 passages</span><span class="bareme-pts">300 pts</span></div>
+          <div class="bareme-row"><span>1 passage</span><span class="bareme-pts">100 pts</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAMEUR -->
+  <div class="ep-section" id="ep-rameur">
+    <div class="ep-header">
+      <div class="ep-emoji">🚣</div>
+      <div>
+        <div class="ep-title">Rameur</div>
+        <span class="ep-type type-chrono">⏱ Chronométré — 1000m</span>
+      </div>
+    </div>
+    <div class="info-block ok">
+      <div class="info-label">🎯 Objectif</div>
+      Atteindre <strong>1000m</strong> sur le compteur le plus vite possible. L'épreuve s'arrête à <strong>7 minutes</strong> si l'objectif n'est pas atteint.
+    </div>
+    <ul class="rules-list">
+      <li><span class="rule-num">1</span><strong>Plateforme :</strong> la plateforme ne peut être quittée que lorsque le jury en donne l'autorisation.</li>
+      <li><span class="rule-num">2</span><strong>Validation :</strong> l'épreuve est validée lorsque le compteur de l'écran affiche 1000m.</li>
+      <li><span class="rule-num">3</span><strong>Résistance :</strong> le choix de la résistance est libre. Elle sera réglée par défaut à 8. Il est interdit de la modifier une fois l'épreuve commencée.</li>
+      <li><span class="rule-num">4</span><strong>Limite de temps :</strong> le chrono s'arrête à 7 minutes si les 1000m ne sont pas atteints.</li>
+      <li><span class="rule-num">5</span><strong>Pénalité comportement :</strong> tout manque de respect envers le jury entraîne <strong>+15 secondes</strong> sur le chrono final, par infraction constatée.</li>
+    </ul>
+    <div class="info-block warn">
+      <div class="info-label">⚠️ Points de vigilance juge</div>
+      Vérifiez la résistance avant le départ (défaut : 8). Surveillez que le participant ne touche pas le réglage de résistance pendant l'épreuve.
+    </div>
+  </div>
+
+  <!-- SKIERG -->
+  <div class="ep-section" id="ep-skierg">
+    <div class="ep-header">
+      <div class="ep-emoji">⛷️</div>
+      <div>
+        <div class="ep-title">Skierg</div>
+        <span class="ep-type type-chrono">⏱ Chronométré — 1000m</span>
+      </div>
+    </div>
+    <div class="info-block ok">
+      <div class="info-label">🎯 Objectif</div>
+      Atteindre <strong>1000m</strong> sur le compteur le plus vite possible. L'épreuve s'arrête à <strong>7 minutes</strong> si l'objectif n'est pas atteint.
+    </div>
+    <ul class="rules-list">
+      <li><span class="rule-num">1</span><strong>Plateforme :</strong> la plateforme ne peut être quittée que lorsque le jury en donne l'autorisation.</li>
+      <li><span class="rule-num">2</span><strong>Validation :</strong> l'épreuve est validée lorsque le compteur de l'écran affiche 1000m.</li>
+      <li><span class="rule-num">3</span><strong>Résistance :</strong> le choix de la résistance est libre. Elle sera réglée par défaut à 8. Il est interdit de la modifier une fois l'épreuve commencée.</li>
+      <li><span class="rule-num">4</span><strong>Limite de temps :</strong> le chrono s'arrête à 7 minutes si les 1000m ne sont pas atteints.</li>
+      <li><span class="rule-num">5</span><strong>Pénalité comportement :</strong> tout manque de respect envers le jury entraîne <strong>+15 secondes</strong> sur le chrono final, par infraction constatée.</li>
+    </ul>
+    <div class="info-block warn">
+      <div class="info-label">⚠️ Points de vigilance juge</div>
+      Vérifiez la résistance avant le départ (défaut : 8). Surveillez que le participant ne touche pas le réglage pendant l'épreuve.
+    </div>
+  </div>
+
+  <!-- FENTES -->
+  <div class="ep-section" id="ep-fentes">
+    <div class="ep-header">
+      <div class="ep-emoji">🦵</div>
+      <div>
+        <div class="ep-title">Fentes</div>
+        <span class="ep-type type-chrono">⏱ Chronométré — 2 A/R</span>
+      </div>
+    </div>
+    <div class="info-block ok">
+      <div class="info-label">🎯 Objectif</div>
+      Réaliser <strong>2 allers-retours</strong> en fentes avec un power bag sur le dos. L'épreuve s'arrête à <strong>7 minutes</strong> si l'objectif n'est pas atteint.
+    </div>
+    <ul class="rules-list">
+      <li><span class="rule-num">1</span><strong>Mouvement :</strong> l'épreuve consiste à effectuer 2 allers-retours en fentes marchées avec un power bag sur le dos.</li>
+      <li><span class="rule-num">2</span><strong>Enchaînement :</strong> il est possible d'enchaîner les fentes sans pause, à condition que l'extension de hanche soit complète entre chaque fente.</li>
+      <li><span class="rule-num">3</span><strong>Validation d'arrivée :</strong> une arrivée est validée lorsque le talon avant dépasse la ligne indiquée.</li>
+      <li><span class="rule-num">4</span><strong>Limite de temps :</strong> le chrono s'arrête à 7 minutes si les 2 allers-retours ne sont pas complétés.</li>
+      <li><span class="rule-num">5</span><strong>Pénalité comportement :</strong> tout manque de respect envers le jury entraîne <strong>+15 secondes</strong> sur le chrono final, par infraction constatée.</li>
+    </ul>
+    <div class="info-block warn">
+      <div class="info-label">⚠️ Points de vigilance juge</div>
+      Vérifiez l'extension de hanche complète entre chaque fente. Contrôlez que le talon avant dépasse bien la ligne à chaque arrivée.
+    </div>
+  </div>
+
+  <!-- KETTLEBELL -->
+  <div class="ep-section" id="ep-kettlebell">
+    <div class="ep-header">
+      <div class="ep-emoji">🔔</div>
+      <div>
+        <div class="ep-title">Kettlebell</div>
+        <span class="ep-type type-chrono">⏱ Chronométré — Slalom</span>
+      </div>
+    </div>
+    <div class="info-block ok">
+      <div class="info-label">🎯 Objectif</div>
+      Déplacer les kettlebells de la ligne de départ à la ligne d'arrivée, en terminant par le slalom. L'épreuve s'arrête à <strong>7 minutes</strong>.
+    </div>
+    <ul class="rules-list">
+      <li><span class="rule-num">1</span><strong>Déplacement :</strong> l'épreuve consiste à déplacer les kettlebells de la ligne de départ à la ligne d'arrivée, en finissant par le slalom.</li>
+      <li><span class="rule-num">2</span><strong>Une à la fois :</strong> les kettlebells ne peuvent être portées qu'une par une. L'ordre de déplacement est libre.</li>
+      <li><span class="rule-num">3</span><strong>Dépôt :</strong> il est interdit de jeter les kettlebells ou de les déposer fortement. Chaque kettlebell doit être posée derrière la ligne indiquée.</li>
+      <li><span class="rule-num">4</span><strong>Limite de temps :</strong> le chrono s'arrête à 7 minutes si l'épreuve n'est pas terminée.</li>
+      <li><span class="rule-num">5</span><strong>Pénalité comportement :</strong> tout manque de respect envers le jury entraîne <strong>+15 secondes</strong> sur le chrono final, par infraction constatée.</li>
+    </ul>
+    <div class="info-block warn">
+      <div class="info-label">⚠️ Points de vigilance juge</div>
+      Vérifiez que les KB sont portées une par une et déposées correctement derrière la ligne. Tout jet ou dépôt brutal doit être signalé.
+    </div>
+  </div>
+
+  <!-- PNEU -->
+  <div class="ep-section" id="ep-pneu">
+    <div class="ep-header">
+      <div class="ep-emoji">⚫</div>
+      <div>
+        <div class="ep-title">Pneu</div>
+        <span class="ep-type type-chrono">⏱ Chronométré — Aller-retour</span>
+      </div>
+    </div>
+    <div class="info-block ok">
+      <div class="info-label">🎯 Objectif</div>
+      Faire réaliser au pneu un <strong>aller-retour complet</strong> le plus vite possible. L'épreuve s'arrête à <strong>7 minutes</strong>.
+    </div>
+    <ul class="rules-list">
+      <li><span class="rule-num">1</span><strong>Validation :</strong> l'épreuve est terminée lorsque le pneu a effectué un aller-retour complet.</li>
+      <li><span class="rule-num">2</span><strong>Position :</strong> le pneu ne peut être déplacé que lorsqu'il est à plat sur le sol. Il est interdit de le déplacer en déséquilibre ou sur la tranche.</li>
+      <li><span class="rule-num">3</span><strong>Demi-tour :</strong> le demi-tour ne peut se faire que lorsque l'entièreté du pneu a passé la ligne.</li>
+      <li><span class="rule-num">4</span><strong>Limite de temps :</strong> le chrono s'arrête à 7 minutes si l'aller-retour n'est pas complété.</li>
+      <li><span class="rule-num">5</span><strong>Pénalité comportement :</strong> tout manque de respect envers le jury entraîne <strong>+15 secondes</strong> sur le chrono final, par infraction constatée.</li>
+    </ul>
+    <div class="info-block warn">
+      <div class="info-label">⚠️ Points de vigilance juge</div>
+      Vérifiez que le pneu est bien à plat avant chaque déplacement. Contrôlez que l'entièreté du pneu passe la ligne avant le demi-tour.
+    </div>
+    <div class="bareme-box">
+      <div class="bareme-title">Barème — seuils clés</div>
+      <div class="bareme-grid">
+        <div class="bareme-col">
+          <div class="bareme-col-title bc-bleu">🔵 Hommes</div>
+          <div class="bareme-row"><span>1000 pts</span><span class="bareme-pts">&lt; 2'08</span></div>
+          <div class="bareme-row"><span>750 pts</span><span class="bareme-pts">2'38</span></div>
+          <div class="bareme-row"><span>500 pts</span><span class="bareme-pts">3'10</span></div>
+          <div class="bareme-row"><span>250 pts</span><span class="bareme-pts">4'00</span></div>
+        </div>
+        <div class="bareme-col">
+          <div class="bareme-col-title bc-jaune">🟡 Femmes</div>
+          <div class="bareme-row"><span>1000 pts</span><span class="bareme-pts">&lt; 2'08</span></div>
+          <div class="bareme-row"><span>750 pts</span><span class="bareme-pts">2'38</span></div>
+          <div class="bareme-row"><span>500 pts</span><span class="bareme-pts">3'10</span></div>
+          <div class="bareme-row"><span>250 pts</span><span class="bareme-pts">4'00</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showEp(id, btn) {
+  document.querySelectorAll('.ep-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.ep-nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('ep-' + id).classList.add('active');
+  btn.classList.add('active');
+  btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}
+</script>
+</body>
+</html>
