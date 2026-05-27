@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Admin — Craponne : LA LÉGENDE</title>
+<script src="firebase-config.js"></script>
+<script type="module">
+  import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const app = initializeApp(FIREBASE_CONFIG);
+  const db  = getDatabase(app);
+
+  const PIN = "1234"; // ← Changez ce code PIN avant le jour J
+
+  let pinOk = false;
+  let scoreCount = 0;
+
+  window.checkPin = function() {
+    const val = document.getElementById('pin-input').value;
+    if (val === PIN) {
+      pinOk = true;
+      document.getElementById('screen-pin').style.display = 'none';
+      document.getElementById('screen-admin').style.display = 'block';
+      loadStats();
+    } else {
+      document.getElementById('pin-error').style.display = 'block';
+      document.getElementById('pin-input').value = '';
+      document.getElementById('pin-input').focus();
+    }
+  };
+
+  function loadStats() {
+    onValue(ref(db, 'scores'), (snapshot) => {
+      const data = snapshot.val() || {};
+      let count = 0;
+      let participants = 0;
+      Object.values(data).forEach(p => {
+        const ep = Object.values(p).filter(v => v !== null && v !== undefined).length;
+        if (ep > 0) participants++;
+        count += ep;
+      });
+      document.getElementById('stat-scores').textContent = count;
+      document.getElementById('stat-participants').textContent = participants;
+      document.getElementById('btn-reset').disabled = count === 0;
+    });
+  }
+
+  window.confirmReset = function() {
+    document.getElementById('confirm-box').style.display = 'block';
+    document.getElementById('btn-reset').style.display = 'none';
+  };
+
+  window.cancelReset = function() {
+    document.getElementById('confirm-box').style.display = 'none';
+    document.getElementById('btn-reset').style.display = 'block';
+  };
+
+  window.doReset = async function() {
+    const btn = document.getElementById('btn-confirm-reset');
+    btn.disabled = true;
+    btn.textContent = 'Réinitialisation…';
+    try {
+      await remove(ref(db, 'scores'));
+      document.getElementById('confirm-box').style.display = 'none';
+      document.getElementById('btn-reset').style.display = 'block';
+      showToast('✅ Scores réinitialisés avec succès');
+    } catch(e) {
+      showToast('❌ Erreur — vérifiez la connexion', true);
+    }
+    btn.disabled = false;
+    btn.textContent = 'Oui, tout effacer';
+  };
+
+  window.handlePinKey = function(e) {
+    if (e.key === 'Enter') window.checkPin();
+  };
+
+  function showToast(msg, error = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (error ? ' error' : '');
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0f0f1e;
+    color: #e5e7eb;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  .top-bar {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 1.25rem;
+    background: #0f0f1e;
+    border-bottom: 1px solid #1f2937;
+    z-index: 10;
+  }
+  .top-bar h1 { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #F97316; }
+  .top-bar a  { font-size: 0.75rem; color: #6b7280; text-decoration: none; }
+  .card {
+    background: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 14px;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 380px;
+    margin-top: 60px;
+  }
+  .card-title { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; margin-bottom: 1.25rem; }
+  /* PIN */
+  .pin-icon { font-size: 2.5rem; text-align: center; margin-bottom: 1rem; }
+  .pin-label { font-size: 0.85rem; color: #9ca3af; text-align: center; margin-bottom: 1rem; }
+  #pin-input {
+    width: 100%; padding: 14px; font-size: 1.6rem; font-weight: 700;
+    background: #1f2937; border: 2px solid #374151; border-radius: 10px;
+    color: #fff; text-align: center; letter-spacing: 0.5em; font-family: monospace;
+    margin-bottom: 10px;
+  }
+  #pin-input:focus { outline: none; border-color: #F97316; }
+  #pin-error { font-size: 0.8rem; color: #f87171; text-align: center; margin-bottom: 10px; display: none; }
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.25rem; }
+  .stat-box { background: #1f2937; border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-val { font-size: 1.8rem; font-weight: 700; color: #818CF8; }
+  .stat-label { font-size: 0.7rem; color: #6b7280; margin-top: 2px; }
+  /* Boutons */
+  .btn-primary {
+    width: 100%; padding: 14px; border-radius: 12px; border: none;
+    background: #F97316; color: #fff; font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-danger {
+    width: 100%; padding: 14px; border-radius: 12px; border: none;
+    background: #7f1d1d; color: #fca5a5; font-size: 1rem; font-weight: 700;
+    cursor: pointer; margin-bottom: 8px;
+  }
+  .btn-secondary {
+    width: 100%; padding: 10px; border-radius: 12px;
+    border: 1px solid #374151; background: transparent;
+    color: #9ca3af; font-size: 0.85rem; cursor: pointer;
+  }
+  /* Confirm */
+  #confirm-box { display: none; }
+  .confirm-warn {
+    background: #450a0a; border: 1px solid #7f1d1d; border-radius: 10px;
+    padding: 14px; margin-bottom: 14px; font-size: 0.85rem; color: #fca5a5;
+    line-height: 1.5; text-align: center;
+  }
+  .confirm-warn strong { display: block; font-size: 1rem; margin-bottom: 4px; color: #f87171; }
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: #065f46; color: #6ee7b7; padding: 12px 20px; border-radius: 12px;
+    font-size: 0.85rem; font-weight: 500; transition: transform 0.3s; z-index: 999;
+    max-width: 90vw; text-align: center;
+  }
+  .toast.show  { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: #7f1d1d; color: #fca5a5; }
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <h1>🏅 LA LÉGENDE — Admin</h1>
+  <a href="index.html">← Classement</a>
+</div>
+
+<!-- Écran PIN -->
+<div id="screen-pin" class="card">
+  <div class="pin-icon">🔐</div>
+  <div class="pin-label">Entrez le code PIN administrateur</div>
+  <input id="pin-input" type="password" inputmode="numeric" maxlength="6" placeholder="••••" onkeydown="handlePinKey(event)" autofocus>
+  <div id="pin-error">Code incorrect, réessayez.</div>
+  <button class="btn-primary" onclick="checkPin()">Accéder</button>
+</div>
+
+<!-- Écran Admin -->
+<div id="screen-admin" class="card" style="display:none">
+  <div class="card-title">⚙️ Panneau administrateur</div>
+
+  <div class="stats-grid">
+    <div class="stat-box">
+      <div class="stat-val" id="stat-scores">—</div>
+      <div class="stat-label">scores enregistrés</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="stat-participants">—</div>
+      <div class="stat-label">participants actifs</div>
+    </div>
+  </div>
+
+  <div id="btn-reset-wrap">
+    <button class="btn-danger" id="btn-reset" onclick="confirmReset()">
+      🗑️ Réinitialiser tous les scores
+    </button>
+  </div>
+
+  <div id="confirm-box">
+    <div class="confirm-warn">
+      <strong>⚠️ Action irréversible</strong>
+      Tous les scores seront définitivement supprimés.<br>Le classement TV repassera à zéro.
+    </div>
+    <button class="btn-danger" id="btn-confirm-reset" onclick="doReset()">Oui, tout effacer</button>
+    <button class="btn-secondary" onclick="cancelReset()">Annuler</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+</body>
+</html>
