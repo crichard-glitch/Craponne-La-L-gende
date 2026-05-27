@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Juge — Craponne : LA LÉGENDE</title>
+<script src="firebase-config.js"></script>
+<script src="baremes.js"></script>
+<script type="module">
+  import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const app = initializeApp(FIREBASE_CONFIG);
+  const db  = getDatabase(app);
+
+  // État
+  let selectedEp    = null;
+  let selectedDos   = null; // { id, couleur, num, genre }
+  let previewPts    = null;
+
+  // Participants
+  const participants = [];
+  for (let n = 1; n <= 12; n++) {
+    participants.push({ id: 'B' + n, couleur: 'bleu',  num: n, genre: 'H' });
+    participants.push({ id: 'J' + n, couleur: 'jaune', num: n, genre: 'F' });
+  }
+
+  // ── Rendu épreuve selector ──────────────────────────────────────────────────
+  function renderEpSelector() {
+    const c = document.getElementById('ep-grid');
+    c.innerHTML = EPREUVES.map(ep => `
+      <button class="ep-btn" data-id="${ep.id}" onclick="selectEp('${ep.id}')">
+        <span class="ep-emoji">${ep.emoji}</span>
+        <span class="ep-label">${ep.label}</span>
+        ${ep.type === 'passages' ? '<span class="ep-tag">passages</span>' : ''}
+      </button>`).join('');
+  }
+
+  // ── Sélection épreuve ───────────────────────────────────────────────────────
+  window.selectEp = function(epId) {
+    selectedEp = EPREUVES.find(e => e.id === epId);
+    selectedDos = null;
+    previewPts = null;
+    document.querySelectorAll('.ep-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.id === epId);
+    });
+    document.getElementById('step-dossard').style.display = 'block';
+    document.getElementById('step-saisie').style.display = 'none';
+    document.getElementById('step-confirm').style.display = 'none';
+    renderDossardSelector();
+    document.getElementById('step-dossard').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // ── Rendu dossard selector ──────────────────────────────────────────────────
+  function renderDossardSelector() {
+    const cb = document.getElementById('dos-bleu');
+    const cj = document.getElementById('dos-jaune');
+    const nums = [1,2,3,4,5,6,7,8,9,10,11,12];
+    cb.innerHTML = nums.map(n => `
+      <button class="dos-btn dos-bleu-btn" data-id="B${n}" onclick="selectDos('B${n}')">
+        ${n}
+      </button>`).join('');
+    cj.innerHTML = nums.map(n => `
+      <button class="dos-btn dos-jaune-btn" data-id="J${n}" onclick="selectDos('J${n}')">
+        ${n}
+      </button>`).join('');
+  }
+
+  // ── Sélection dossard ───────────────────────────────────────────────────────
+  window.selectDos = async function(dosId) {
+    selectedDos = participants.find(p => p.id === dosId);
+    document.querySelectorAll('.dos-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.id === dosId);
+    });
+
+    // Charger score existant
+    const snap = await get(ref(db, `scores/${dosId}/${selectedEp.id}`));
+    const existing = snap.val();
+
+    document.getElementById('step-saisie').style.display = 'block';
+    document.getElementById('step-confirm').style.display = 'none';
+
+    const ep = selectedEp;
+    const saisieLabel = document.getElementById('saisie-label');
+    const input = document.getElementById('saisie-input');
+    const hint  = document.getElementById('saisie-hint');
+
+    if (ep.type === 'passages') {
+      saisieLabel.textContent = `${ep.emoji} ${ep.label} — Nombre de passages`;
+      input.type = 'number';
+      input.min = '0'; input.max = '10'; input.step = '0.5';
+      input.placeholder = 'Ex : 7.5';
+      hint.textContent = 'Saisir le nombre de passages (0 à 10, demi-passages acceptés)';
+    } else {
+      saisieLabel.textContent = `${ep.emoji} ${ep.label} — Chrono`;
+      input.type = 'text';
+      input.inputMode = 'text';
+      input.placeholder = 'Ex : 3:45 ou 3\'45';
+      hint.textContent = 'Format : M:SS ou M\'SS (ex: 4:23 pour 4 min 23 sec)';
+    }
+
+    if (existing !== null && existing !== undefined) {
+      input.value = '';
+      document.getElementById('existing-score').textContent =
+        `Score actuel pour ce dossard : ${existing} pts`;
+    } else {
+      document.getElementById('existing-score').textContent = '';
+    }
+
+    previewPts = null;
+    document.getElementById('preview-pts').textContent = '';
+    document.getElementById('step-saisie').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // ── Prévisualisation des points ─────────────────────────────────────────────
+  window.updatePreview = function() {
+    const input = document.getElementById('saisie-input').value.trim();
+    if (!input || !selectedEp || !selectedDos) {
+      document.getElementById('preview-pts').textContent = '';
+      return;
+    }
+    const val = parseInput(input);
+    if (val === null || isNaN(val)) {
+      document.getElementById('preview-pts').textContent = '⚠️ Format invalide';
+      document.getElementById('preview-pts').className = 'preview-pts error';
+      previewPts = null;
+      return;
+    }
+    const pts = calcPoints(selectedEp.id, selectedDos.genre, val);
+    previewPts = pts;
+
+    let cls = pts >= 750 ? 'excellent' : pts >= 400 ? 'medium' : 'low';
+    document.getElementById('preview-pts').textContent = `→ ${pts} points`;
+    document.getElementById('preview-pts').className = `preview-pts ${cls}`;
+  };
+
+  // ── Valider saisie ──────────────────────────────────────────────────────────
+  window.validerSaisie = function() {
+    if (previewPts === null) {
+      document.getElementById('preview-pts').textContent = '⚠️ Saisissez une valeur valide';
+      return;
+    }
+    const input = document.getElementById('saisie-input').value.trim();
+    document.getElementById('confirm-recap').innerHTML = `
+      <div class="recap-line">Épreuve</div><div class="recap-val">${selectedEp.emoji} ${selectedEp.label}</div>
+      <div class="recap-line">Dossard</div><div class="recap-val">
+        <span class="dos-inline ${selectedDos.couleur === 'bleu' ? 'dos-inline-bleu' : 'dos-inline-jaune'}">${selectedDos.num}</span>
+        ${selectedDos.couleur === 'bleu' ? 'Bleu — Homme' : 'Jaune — Femme'}
+      </div>
+      <div class="recap-line">Valeur saisie</div><div class="recap-val">${input}</div>
+      <div class="recap-line">Points attribués</div><div class="recap-val recap-pts">${previewPts} pts</div>`;
+    document.getElementById('step-confirm').style.display = 'block';
+    document.getElementById('step-confirm').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // ── Enregistrer dans Firebase ───────────────────────────────────────────────
+  window.enregistrer = async function() {
+    if (!selectedDos || !selectedEp || previewPts === null) return;
+    const btn = document.getElementById('btn-enregistrer');
+    btn.disabled = true;
+    btn.textContent = 'Enregistrement…';
+    try {
+      await set(ref(db, `scores/${selectedDos.id}/${selectedEp.id}`), previewPts);
+      showToast(`✅ ${previewPts} pts enregistrés pour Dossard ${selectedDos.couleur === 'bleu' ? 'Bleu' : 'Jaune'} n°${selectedDos.num}`);
+      // Reset saisie
+      document.getElementById('saisie-input').value = '';
+      document.getElementById('preview-pts').textContent = '';
+      document.getElementById('existing-score').textContent = `Score actuel : ${previewPts} pts`;
+      document.getElementById('step-confirm').style.display = 'none';
+      previewPts = null;
+    } catch (e) {
+      showToast('❌ Erreur de connexion. Vérifiez le réseau.', true);
+    }
+    btn.disabled = false;
+    btn.textContent = 'Confirmer et enregistrer';
+  };
+
+  window.annulerConfirm = function() {
+    document.getElementById('step-confirm').style.display = 'none';
+  };
+
+  function showToast(msg, error = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (error ? ' error' : '');
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  window.addEventListener('DOMContentLoaded', renderEpSelector);
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0f0f1e;
+    color: #e5e7eb;
+    padding: 1rem;
+    padding-bottom: 6rem;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+  .top-bar h1 {
+    font-size: 0.9rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: #F97316;
+  }
+  .top-bar a {
+    font-size: 0.75rem; color: #6b7280; text-decoration: none;
+  }
+  /* Étapes */
+  .step {
+    background: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 14px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  .step-title {
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #6b7280; margin-bottom: 0.75rem;
+  }
+  /* Grille épreuves */
+  #ep-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+  }
+  .ep-btn {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 10px 8px; border-radius: 10px;
+    border: 1px solid #374151; background: #1f2937;
+    color: #9ca3af; cursor: pointer; transition: all 0.15s;
+    position: relative;
+  }
+  .ep-btn.active {
+    border-color: #F97316; background: #1c0e00; color: #FCD34D;
+  }
+  .ep-emoji { font-size: 1.4rem; margin-bottom: 4px; }
+  .ep-label { font-size: 0.75rem; font-weight: 500; text-align: center; }
+  .ep-tag {
+    position: absolute; top: 5px; right: 5px;
+    font-size: 0.6rem; background: #065f46; color: #6ee7b7;
+    padding: 1px 5px; border-radius: 4px;
+  }
+  /* Dossards */
+  .dos-section-label {
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; margin-bottom: 8px; margin-top: 12px;
+  }
+  .dos-section-label:first-child { margin-top: 0; }
+  .dos-label-bleu  { color: #60A5FA; }
+  .dos-label-jaune { color: #FCD34D; }
+  .dos-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .dos-btn {
+    aspect-ratio: 1; border-radius: 8px; border: 1px solid #374151;
+    font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.15s;
+  }
+  .dos-bleu-btn  { background: #1e3a5f; color: #93c5fd; border-color: #1d4ed8; }
+  .dos-jaune-btn { background: #431407; color: #fde68a; border-color: #b45309; }
+  .dos-bleu-btn.active  { background: #1d4ed8; color: #fff; border-color: #60a5fa; transform: scale(1.08); }
+  .dos-jaune-btn.active { background: #b45309; color: #fff; border-color: #fcd34d; transform: scale(1.08); }
+  /* Saisie */
+  #saisie-label { font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; }
+  #saisie-input {
+    width: 100%; padding: 14px; font-size: 1.4rem; font-weight: 600;
+    background: #1f2937; border: 2px solid #374151; border-radius: 10px;
+    color: #fff; text-align: center; font-family: 'Inter', monospace;
+  }
+  #saisie-input:focus { outline: none; border-color: #F97316; }
+  #saisie-hint { font-size: 0.72rem; color: #6b7280; margin-top: 6px; text-align: center; }
+  #existing-score { font-size: 0.75rem; color: #6b7280; margin-top: 4px; text-align: center; }
+  .preview-pts {
+    font-size: 1.6rem; font-weight: 800; text-align: center;
+    margin: 10px 0; letter-spacing: 0.02em;
+  }
+  .preview-pts.excellent { color: #4ade80; }
+  .preview-pts.medium    { color: #facc15; }
+  .preview-pts.low       { color: #f87171; }
+  .preview-pts.error     { color: #f87171; font-size: 0.9rem; }
+  .btn-primary {
+    width: 100%; padding: 14px; border-radius: 12px; border: none;
+    background: #F97316; color: #fff; font-size: 1rem; font-weight: 700;
+    cursor: pointer; margin-top: 10px; transition: opacity 0.15s;
+  }
+  .btn-primary:disabled { opacity: 0.5; }
+  .btn-secondary {
+    width: 100%; padding: 10px; border-radius: 12px;
+    border: 1px solid #374151; background: transparent;
+    color: #9ca3af; font-size: 0.85rem; cursor: pointer; margin-top: 8px;
+  }
+  /* Confirm */
+  .recap-grid {
+    display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin-bottom: 12px;
+  }
+  .recap-line { font-size: 0.75rem; color: #6b7280; align-self: center; }
+  .recap-val  { font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .recap-pts  { color: #818cf8; font-size: 1.1rem; font-weight: 700; }
+  .dos-inline {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 5px; font-weight: 700; font-size: 0.8rem;
+  }
+  .dos-inline-bleu  { background: #1d4ed8; color: #bfdbfe; }
+  .dos-inline-jaune { background: #b45309; color: #fde68a; }
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: #065f46; color: #6ee7b7; padding: 12px 20px; border-radius: 12px;
+    font-size: 0.85rem; font-weight: 500; transition: transform 0.3s; z-index: 999;
+    max-width: 90vw; text-align: center;
+  }
+  .toast.show  { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: #7f1d1d; color: #fca5a5; }
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <h1>🏅 LA LÉGENDE — Interface Juge</h1>
+  <a href="index.html">← Classement</a>
+</div>
+
+<!-- Étape 1 : Choisir l'épreuve -->
+<div class="step">
+  <div class="step-title">① Sélectionnez votre épreuve</div>
+  <div id="ep-grid"></div>
+</div>
+
+<!-- Étape 2 : Choisir le dossard -->
+<div class="step" id="step-dossard" style="display:none">
+  <div class="step-title">② Sélectionnez le dossard</div>
+  <div class="dos-section-label dos-label-bleu">🔵 Dossards Bleus — Hommes</div>
+  <div class="dos-grid" id="dos-bleu"></div>
+  <div class="dos-section-label dos-label-jaune">🟡 Dossards Jaunes — Femmes</div>
+  <div class="dos-grid" id="dos-jaune"></div>
+</div>
+
+<!-- Étape 3 : Saisir la valeur -->
+<div class="step" id="step-saisie" style="display:none">
+  <div class="step-title">③ Saisissez le résultat</div>
+  <div id="saisie-label"></div>
+  <input id="saisie-input" type="text" placeholder="—" oninput="updatePreview()" autocomplete="off" autocorrect="off">
+  <div id="saisie-hint"></div>
+  <div id="existing-score"></div>
+  <div id="preview-pts" class="preview-pts"></div>
+  <button class="btn-primary" onclick="validerSaisie()">Vérifier →</button>
+</div>
+
+<!-- Étape 4 : Confirmation -->
+<div class="step" id="step-confirm" style="display:none">
+  <div class="step-title">④ Confirmez l'enregistrement</div>
+  <div class="recap-grid" id="confirm-recap"></div>
+  <button class="btn-primary" id="btn-enregistrer" onclick="enregistrer()">Confirmer et enregistrer</button>
+  <button class="btn-secondary" onclick="annulerConfirm()">← Modifier</button>
+</div>
+
+<div id="toast" class="toast"></div>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Craponne : LA LÉGENDE — Classement</title>
+<script src="firebase-config.js"></script>
+<script src="baremes.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const app = initializeApp(FIREBASE_CONFIG);
+  const db  = getDatabase(app);
+
+  // Participants
+  const participants = [];
+  for (let n = 1; n <= 12; n++) {
+    participants.push({ id: 'B' + n, couleur: 'bleu',  num: n, genre: 'H' });
+    participants.push({ id: 'J' + n, couleur: 'jaune', num: n, genre: 'F' });
+  }
+
+  let scores = {}; // { 'B1': { wallball: 750, course: 500, ... }, ... }
+
+  function totalPts(id) {
+    if (!scores[id]) return 0;
+    return Object.values(scores[id]).reduce((s, v) => s + (v || 0), 0);
+  }
+
+  function epCount(id) {
+    if (!scores[id]) return 0;
+    return Object.values(scores[id]).filter(v => v !== null && v !== undefined).length;
+  }
+
+  function renderClassement(genre, containerId) {
+    const list = participants
+      .filter(p => p.genre === genre)
+      .map(p => ({ ...p, total: totalPts(p.id), ep: epCount(p.id) }))
+      .sort((a, b) => b.total - a.total || b.ep - a.ep);
+
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    list.forEach((p, i) => {
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`;
+      const dosCls = p.couleur === 'bleu' ? 'dos-bleu' : 'dos-jaune';
+      const topCls = i === 0 ? 'top1' : i < 3 ? 'top3' : '';
+      const row = document.createElement('div');
+      row.className = `bb-row ${topCls}`;
+      row.innerHTML = `
+        <span class="bb-rank">${medal}</span>
+        <span class="bb-dos ${dosCls}">${p.num}</span>
+        <span class="bb-name">Dossard ${p.couleur === 'bleu' ? 'Bleu' : 'Jaune'} n°${p.num}</span>
+        <span class="bb-ep">${p.ep}/8</span>
+        <span class="bb-pts">${p.total} pts</span>`;
+      container.appendChild(row);
+    });
+  }
+
+  function renderEpreuves() {
+    const epDone = EPREUVES.map(ep => {
+      const count = participants.filter(p => scores[p.id] && scores[p.id][ep.id] != null).length;
+      return { ...ep, count };
+    });
+    const bar = document.getElementById('ep-bar');
+    bar.innerHTML = epDone.map(ep =>
+      `<span class="ep-badge ${ep.count > 0 ? 'ep-active' : ''}">${ep.emoji} ${ep.label} <b>${ep.count}/24</b></span>`
+    ).join('');
+  }
+
+  function render() {
+    renderClassement('H', 'rank-h');
+    renderClassement('F', 'rank-f');
+    renderEpreuves();
+    document.getElementById('last-update').textContent =
+      'Mis à jour : ' + new Date().toLocaleTimeString('fr-FR');
+  }
+
+  // Écoute Firebase en temps réel
+  onValue(ref(db, 'scores'), (snapshot) => {
+    scores = snapshot.val() || {};
+    render();
+  });
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0a0a18;
+    color: #eee;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  .header h1 {
+    font-size: clamp(1.4rem, 4vw, 2.8rem);
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #FAC775, #F97316, #EF4444);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p {
+    font-size: 0.8rem;
+    color: #555;
+    margin-top: 4px;
+  }
+  /* Barre épreuves */
+  #ep-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+  .ep-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    border: 1px solid #222;
+    color: #555;
+    background: #111;
+  }
+  .ep-badge.ep-active {
+    border-color: #F97316;
+    color: #FAC775;
+    background: #1a1000;
+  }
+  /* Grille H/F */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  .section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .title-bleu  { color: #60A5FA; }
+  .title-jaune { color: #FCD34D; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .dot-bleu  { background: #1D4ED8; }
+  .dot-jaune { background: #B45309; }
+  /* Lignes classement */
+  .bb-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    background: #111827;
+    border: 1px solid #1f2937;
+    transition: background 0.2s;
+  }
+  .bb-row.top1 { background: #1c1200; border-color: #92400e; }
+  .bb-row.top3 { background: #111827; border-color: #374151; }
+  .bb-rank { font-size: 1.1rem; min-width: 28px; text-align: center; }
+  .bb-dos {
+    width: 32px; height: 32px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+  }
+  .dos-bleu  { background: #1D4ED8; color: #BFDBFE; }
+  .dos-jaune { background: #B45309; color: #FDE68A; }
+  .bb-name { flex: 1; font-size: 0.82rem; color: #9ca3af; }
+  .bb-row.top1 .bb-name { color: #FCD34D; }
+  .bb-ep { font-size: 0.7rem; color: #4b5563; }
+  .bb-pts { font-weight: 700; font-size: 0.95rem; color: #818CF8; white-space: nowrap; }
+  .bb-row.top1 .bb-pts { color: #FCD34D; }
+  /* Footer */
+  footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.7rem;
+    color: #374151;
+  }
+  footer a { color: #4b5563; text-decoration: none; }
+  footer a:hover { color: #9ca3af; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🏅 Craponne : LA LÉGENDE</h1>
+  <p>Classement général en temps réel</p>
+</div>
+
+<div id="ep-bar"></div>
+
+<div class="grid">
+  <div>
+    <div class="section-title title-bleu">
+      <span class="dot dot-bleu"></span> Hommes — Dossards Bleus
+    </div>
+    <div id="rank-h"></div>
+  </div>
+  <div>
+    <div class="section-title title-jaune">
+      <span class="dot dot-jaune"></span> Femmes — Dossards Jaunes
+    </div>
+    <div id="rank-f"></div>
+  </div>
+</div>
+
+<footer>
+  <span id="last-update">En attente de données…</span>
+  &nbsp;·&nbsp;
+  <a href="juge.html">Interface juges →</a>
+</footer>
+</body>
+</html>
