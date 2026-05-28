@@ -15,7 +15,7 @@
 
   // Participants
   const participants = [];
-  for (let n = 1; n <= 18; n++) {
+  for (let n = 1; n <= 17; n++) {
     participants.push({ id: 'B' + n, couleur: 'bleu',   num: n, genre: 'H' });
   }
   for (let n = 1; n <= 17; n++) {
@@ -44,7 +44,7 @@
     container.innerHTML = '';
     list.forEach((p, i) => {
       const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`;
-      const dosCls = p.couleur === 'bleu' ? 'dos-bleu' : 'dos-jaune';
+      const dosCls = p.couleur === 'bleu' ? 'dos-bleu' : 'dos-orange';
       const topCls = i === 0 ? 'top1' : i < 3 ? 'top3' : '';
       const row = document.createElement('div');
       row.className = `bb-row ${topCls}`;

@@ -20,7 +20,7 @@
 
   // Participants
   const participants = [];
-  for (let n = 1; n <= 18; n++) {
+  for (let n = 1; n <= 17; n++) {
     participants.push({ id: 'B' + n, couleur: 'bleu',   num: n, genre: 'H' });
   }
   for (let n = 1; n <= 17; n++) {
@@ -57,7 +57,7 @@
   function renderDossardSelector() {
     const cb = document.getElementById('dos-bleu');
     const cj = document.getElementById('dos-jaune');
-    const numsB = Array.from({length:18},(_,i)=>i+1);
+    const numsB = Array.from({length:17},(_,i)=>i+1);
     const numsJ = Array.from({length:17},(_,i)=>i+1);
     cb.innerHTML = numsB.map(n => `
       <button class="dos-btn dos-bleu-btn" data-id="B${n}" onclick="selectDos('B${n}')">
