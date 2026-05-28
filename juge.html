@@ -20,9 +20,11 @@
 
   // Participants
   const participants = [];
-  for (let n = 1; n <= 12; n++) {
-    participants.push({ id: 'B' + n, couleur: 'bleu',  num: n, genre: 'H' });
-    participants.push({ id: 'J' + n, couleur: 'jaune', num: n, genre: 'F' });
+  for (let n = 1; n <= 18; n++) {
+    participants.push({ id: 'B' + n, couleur: 'bleu',   num: n, genre: 'H' });
+  }
+  for (let n = 1; n <= 17; n++) {
+    participants.push({ id: 'J' + n, couleur: 'orange', num: n, genre: 'F' });
   }
 
   // ── Rendu épreuve selector ──────────────────────────────────────────────────
@@ -55,13 +57,14 @@
   function renderDossardSelector() {
     const cb = document.getElementById('dos-bleu');
     const cj = document.getElementById('dos-jaune');
-    const nums = [1,2,3,4,5,6,7,8,9,10,11,12];
-    cb.innerHTML = nums.map(n => `
+    const numsB = Array.from({length:18},(_,i)=>i+1);
+    const numsJ = Array.from({length:17},(_,i)=>i+1);
+    cb.innerHTML = numsB.map(n => `
       <button class="dos-btn dos-bleu-btn" data-id="B${n}" onclick="selectDos('B${n}')">
         ${n}
       </button>`).join('');
-    cj.innerHTML = nums.map(n => `
-      <button class="dos-btn dos-jaune-btn" data-id="J${n}" onclick="selectDos('J${n}')">
+    cj.innerHTML = numsJ.map(n => `
+      <button class="dos-btn dos-orange-btn" data-id="J${n}" onclick="selectDos('J${n}')">
         ${n}
       </button>`).join('');
   }
@@ -145,7 +148,7 @@
       <div class="recap-line">Épreuve</div><div class="recap-val">${selectedEp.emoji} ${selectedEp.label}</div>
       <div class="recap-line">Dossard</div><div class="recap-val">
         <span class="dos-inline ${selectedDos.couleur === 'bleu' ? 'dos-inline-bleu' : 'dos-inline-jaune'}">${selectedDos.num}</span>
-        ${selectedDos.couleur === 'bleu' ? 'Bleu — Homme' : 'Jaune — Femme'}
+        ${selectedDos.couleur === 'bleu' ? 'Bleu — Homme' : 'Orange — Femme'}
       </div>
       <div class="recap-line">Valeur saisie</div><div class="recap-val">${input}</div>
       <div class="recap-line">Points attribués</div><div class="recap-val recap-pts">${previewPts} pts</div>`;
@@ -252,15 +255,15 @@
   .dos-section-label:first-child { margin-top: 0; }
   .dos-label-bleu  { color: #60A5FA; }
   .dos-label-jaune { color: #FCD34D; }
-  .dos-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .dos-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; }
   .dos-btn {
     aspect-ratio: 1; border-radius: 8px; border: 1px solid #374151;
     font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.15s;
   }
   .dos-bleu-btn  { background: #1e3a5f; color: #93c5fd; border-color: #1d4ed8; }
-  .dos-jaune-btn { background: #431407; color: #fde68a; border-color: #b45309; }
+  .dos-orange-btn { background: #431407; color: #fde68a; border-color: #b45309; }
   .dos-bleu-btn.active  { background: #1d4ed8; color: #fff; border-color: #60a5fa; transform: scale(1.08); }
-  .dos-jaune-btn.active { background: #b45309; color: #fff; border-color: #fcd34d; transform: scale(1.08); }
+  .dos-orange-btn.active { background: #b45309; color: #fff; border-color: #fcd34d; transform: scale(1.08); }
   /* Saisie */
   #saisie-label { font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; }
   #saisie-input {
@@ -301,8 +304,8 @@
     display: inline-flex; align-items: center; justify-content: center;
     width: 26px; height: 26px; border-radius: 5px; font-weight: 700; font-size: 0.8rem;
   }
-  .dos-inline-bleu  { background: #1d4ed8; color: #bfdbfe; }
-  .dos-inline-jaune { background: #b45309; color: #fde68a; }
+  .dos-inline-bleu   { background: #1d4ed8; color: #bfdbfe; }
+  .dos-inline-orange { background: #ea580c; color: #fed7aa; }
   /* Toast */
   .toast {
     position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(100px);
@@ -334,7 +337,7 @@
   <div class="step-title">② Sélectionnez le dossard</div>
   <div class="dos-section-label dos-label-bleu">🔵 Dossards Bleus — Hommes</div>
   <div class="dos-grid" id="dos-bleu"></div>
-  <div class="dos-section-label dos-label-jaune">🟡 Dossards Jaunes — Femmes</div>
+  <div class="dos-section-label dos-label-jaune">🟠 Dossards Oranges — Femmes</div>
   <div class="dos-grid" id="dos-jaune"></div>
 </div>
 

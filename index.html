@@ -15,9 +15,11 @@
 
   // Participants
   const participants = [];
-  for (let n = 1; n <= 12; n++) {
-    participants.push({ id: 'B' + n, couleur: 'bleu',  num: n, genre: 'H' });
-    participants.push({ id: 'J' + n, couleur: 'jaune', num: n, genre: 'F' });
+  for (let n = 1; n <= 18; n++) {
+    participants.push({ id: 'B' + n, couleur: 'bleu',   num: n, genre: 'H' });
+  }
+  for (let n = 1; n <= 17; n++) {
+    participants.push({ id: 'J' + n, couleur: 'orange', num: n, genre: 'F' });
   }
 
   let scores = {}; // { 'B1': { wallball: 750, course: 500, ... }, ... }
@@ -49,7 +51,7 @@
       row.innerHTML = `
         <span class="bb-rank">${medal}</span>
         <span class="bb-dos ${dosCls}">${p.num}</span>
-        <span class="bb-name">Dossard ${p.couleur === 'bleu' ? 'Bleu' : 'Jaune'} n°${p.num}</span>
+        <span class="bb-name">Dossard ${p.couleur === 'bleu' ? 'Bleu' : 'Orange'} n°${p.num}</span>
         <span class="bb-ep">${p.ep}/8</span>
         <span class="bb-pts">${p.total} pts</span>`;
       container.appendChild(row);
@@ -150,10 +152,10 @@
     gap: 8px;
   }
   .title-bleu  { color: #60A5FA; }
-  .title-jaune { color: #FCD34D; }
+  .title-orange { color: #FB923C; }
   .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
   .dot-bleu  { background: #1D4ED8; }
-  .dot-jaune { background: #B45309; }
+  .dot-orange { background: #EA580C; }
   /* Lignes classement */
   .bb-row {
     display: flex;
@@ -175,12 +177,12 @@
     font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
   }
   .dos-bleu  { background: #1D4ED8; color: #BFDBFE; }
-  .dos-jaune { background: #B45309; color: #FDE68A; }
+  .dos-orange { background: #EA580C; color: #FED7AA; }
   .bb-name { flex: 1; font-size: 0.82rem; color: #9ca3af; }
-  .bb-row.top1 .bb-name { color: #FCD34D; }
+  .bb-row.top1 .bb-name { color: #FB923C; }
   .bb-ep { font-size: 0.7rem; color: #4b5563; }
   .bb-pts { font-weight: 700; font-size: 0.95rem; color: #818CF8; white-space: nowrap; }
-  .bb-row.top1 .bb-pts { color: #FCD34D; }
+  .bb-row.top1 .bb-pts { color: #FB923C; }
   /* Footer */
   footer {
     text-align: center;
@@ -208,8 +210,8 @@
     <div id="rank-h"></div>
   </div>
   <div>
-    <div class="section-title title-jaune">
-      <span class="dot dot-jaune"></span> Femmes — Dossards Jaunes
+    <div class="section-title title-orange">
+      <span class="dot dot-orange"></span> Femmes — Dossards Oranges
     </div>
     <div id="rank-f"></div>
   </div>
